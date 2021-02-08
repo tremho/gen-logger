@@ -1,0 +1,93 @@
+
+{
+  "categories": [
+    {
+      "name":"Page",
+      "description": "Events in app pages"
+    },
+    {
+      "name": "Foobar",
+      "description": "just another category"
+    }
+  ],
+  "colorSchemes": [
+    {
+      "name": "Standard",
+      "default": {
+        "background": "",
+        "time": "#C00",
+        "message": "#008",
+        "func": "#08A",
+        "file": "#888",
+        "line": "#000",
+        "startGroup": ["#FFF", "#00F"],
+        "endGroup": ["#555", "#ACA"],
+
+        "debug": {
+          "level": "#AA0",
+          "message": "#088",
+          "stack": false,
+          "stackColor": 0
+        },
+        "log": {
+          "level": "#884",
+          "message": "#444",
+          "stack": false,
+          "stackColor": 0
+        },
+        "info": {
+          "level": "#0CC",
+          "message": "#004",
+          "stack": false,
+          "stackColor": 0
+        },
+        "warn": {
+          "level": ["#FFF", "#CC0"],
+          "message": "#880",
+          "stack": false,
+          "stackColor": 0
+        },
+        "error": {
+          "level": ["#FFF", "#D00"],
+          "message": "#C00",
+          "stack": true,
+          "stackColor": "#888"
+        },
+        "exception": {
+          "level": [16, 214],
+          "message": [16, 214],
+          "stack": true,
+          "stackColor": "#448"
+        },
+        "fatal": {
+          "level": "#F00",
+          "message": ["#FFF", "#500"],
+          "stack": true,
+          "stackColor": "#844"
+        }
+
+      }
+    }
+  ],
+  "writers": [
+    {
+      "name": "Console",
+      "type": "Console",
+      "excludeCategories": [],
+      "excludeLevels": [],
+      "display": {
+        "order": ["time", "function", "source", "category", "level", "message"],
+        "supportsColor" : true
+      },
+      "colors": {
+        "inherits": "Standard"
+      }
+    }
+  ],
+  "loggers": [
+    {
+      "name": "Main",
+      "writers": ["Console"]
+    }
+  ]
+}
