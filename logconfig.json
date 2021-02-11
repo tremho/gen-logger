@@ -1,0 +1,14 @@
+{
+  "loggers": [
+    {
+      "name": "Main",
+      "writers": ["Console"]
+    }
+  ],
+  "writers": [
+    {
+      "name": "Console",
+      "type": "Console"
+    }
+  ]
+}

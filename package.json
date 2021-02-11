@@ -5,11 +5,11 @@
   "main": "build/src/Log.js",
   "scripts": {
     "test": "npm run clean && npm run compile && tap --no-timeout ./build/test/*.test.js",
-    "test-direct": "npm run clean && npm run compile && node build/test/More.test.js",
+    "test-direct": "npm run clean && npm run compile && node build/test/misccov.test.js",
     "clean": "rm -fr build css",
     "compile": "tsc",
     "start": "npm run clean && npm run compile && node build/start.js",
-    "doc": "npm run clean && npm run compile && inchjs && cd build; tsccd ./; documentation lint src; documentation readme --readme-file ./README.md --markdown-toc false --section API src"
+    "doc": "npm run clean && npm run compile && inchjs && cd build; tsccd ./; documentation readme --readme-file ../README.md --markdown-toc false --section API src"
   },
   "bin": {
     "smx": "./build/smx/smx.js"
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "inchjs": "^0.4.1",
+    "tap": "^14.11.0",
     "ts-clear-classdoc": "^1.0.1"
   }
 }

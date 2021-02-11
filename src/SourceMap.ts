@@ -20,6 +20,7 @@ try {
 // by the smx tool, if there.  This file maps data found in webpack bundle.js to original .ts sources.
 // will not be there in N/A scenarios.
 let smxInfo
+let oneTime
 
 function getSmxInfo() {
     if(smxInfo) return smxInfo
@@ -28,14 +29,17 @@ function getSmxInfo() {
         smxInfo = gsmx
         return smxInfo
     } else {
-        console.log(">>>> didn't load source map info")
-        // couldn't find the generated map.  We'll have to read the map files at runtime, which we can do if we are
-        // running under Node.  Otherwise, we have no source map capability
-        if(!nfs) {
-            console.warn('')
-            console.warn('Source Mapping is unavailable')
-            console.warn('')
+        if(!oneTime) {
+            // console.log(">>>> didn't load source map info")
+            // couldn't find the generated map.  We'll have to read the map files at runtime, which we can do if we are
+            // running under Node.  Otherwise, we have no source map capability
+            if (!nfs) {
+                console.warn('')
+                console.warn('Source Mapping is unavailable')
+                console.warn('')
+            }
         }
+        oneTime = true
     }
 }
 

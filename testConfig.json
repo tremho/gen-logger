@@ -76,11 +76,42 @@
       "excludeCategories": [],
       "excludeLevels": [],
       "display": {
-        "order": ["time", "function", "source", "category", "level", "message"],
-        "supportsColor" : true
+        "supportsColor" : true,
+        "order": ["time", "function", "source", "category", "level", "message"]
       },
       "colors": {
         "inherits": "Standard"
+      }
+    },
+    {
+      "name": "Mem",
+      "type": "Memory",
+      "memoryName": "test",
+      "excludeCategories": [],
+      "excludeLevels": [],
+      "display": {
+        "order": ["time", "function", "source", "category", "level", "message"],
+        "supportsColor" : false
+      }
+    },
+    {
+      "name": "MemJSON",
+      "type": "Memory",
+      "excludeCategories": [],
+      "excludeLevels": [],
+      "display": {
+        "format" : "json",
+        "order": ["time", "function", "source", "category", "level", "message"],
+        "supportsColor" : false
+      }
+    },
+    {
+      "name": "FileJSON",
+      "type": "LogFile",
+      "filePath" : "logfile.json",
+      "display": {
+        "format" : "json",
+        "order": ["time", "function", "source", "category", "level", "message"]
       }
     }
   ],
@@ -88,6 +119,18 @@
     {
       "name": "Main",
       "writers": ["Console"]
+    },
+    {
+      "name": "Mem",
+      "writers": ["Mem"]
+    },
+    {
+      "name": "MemJSON",
+      "writers": ["MemJSON"]
+    },
+    {
+      "name": "LogFile",
+      "writers": ["FileJSON"]
     }
   ]
 }

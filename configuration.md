@@ -117,12 +117,12 @@ Allowable options are:
     - Additional property `consoleType` may be "tty" or "browser". The default is "tty". Use
     "browser" to support Javascript debugger console output for Google Chrome or similar targets.
 - `Memory`  Defines a target that writes to a named string in memory that can be accessed via the API
-    - Additional property `name` names the memory block that can be retrieved by
+    - Additional property `memoryName` names the memory block that can be retrieved by
     API call.
 - `File` Defines a log file destination
-    - Additional property `path` defines the desired file path name.
+    - Additional property `filePath` defines the desired file path name.
 - `Service` Defines a remote service destination
-    - Additional property `url` defines the url of the service
+    - Additional property `serviceUrl` defines the url of the service
     
 Note that the handling for "Console" and "Memory" are built-in to the
 _gen-logger_ package, whereas "File" and "Service" handling requires

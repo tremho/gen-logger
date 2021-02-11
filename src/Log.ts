@@ -62,28 +62,72 @@ let memoryCaches:any = {}
 let definedLoggers:any = {}
 let knownCategories:string[] = []
 
+/**
+ * Returns the set of established categories as defined in configuration.
+ */
 export function getCategories() {
     return knownCategories
 }
+
+/**
+ * Adds a new category to the set of known categories
+ * @param category
+ */
 export function addCategory(category) {
     knownCategories.push(category)
 }
+
+/**
+ * Removes a category from the set of known categories
+ * @param category
+ */
 export function removeCategory(category) {
     let n = knownCategories.indexOf(category)
     if(n !== -1) {
         knownCategories.splice(n,1)
     }
 }
+
+/**
+ * Loads the logger configuration JSON from the given path and sets the configuration.
+ * This establishes the loggers and output writers, as well as category and level
+ * definitions, color settings, and output formats to use.
+ * See the documentation section on Configuration for more information.
+ *
+ * Available in Node settings.  For browser-based contexts, load your config
+ * via a script or AJAX operation and call `setLoggerConfig` rather than use this method.
+ *
+ * @throws Error if Node is not available or file is not found at path.
+ *
+ * @param path
+ */
 export function loadLoggerConfig(path:string) {
     const cfg = new Configuration()
     cfg.loadConfigFile(path)
     setLoggerConfig(cfg.configSchema)
 }
+
+/**
+ * Sets the configuration from a JSON text string.
+ * If you've loaded a parsed script, or have constructed a JS object,
+ * call `setLoggerConfig` instead.
+ * @param json
+ */
 export function setLoggerConfigJSON(json:string) {
     const cfg = new Configuration()
     const config = JSON.parse(json)
     setLoggerConfig(config)
 }
+
+/**
+ * Use to set the Logger configuration from an object resolved from JSON or
+ * constructed dynamically.
+ * Use in browser-based contexts, since `loadLoggerConfig` in unavailable without Node support.
+ * This establishes the loggers and output writers, as well as category and level
+ * definitions, color settings, and output formats to use.
+ * See the documentation section on Configuration for more information.
+ * @param config
+ */
 export function setLoggerConfig(config:ConfigSchema) {
     // reset categories to start
     knownCategories = ['Default']
@@ -103,7 +147,7 @@ export function setLoggerConfig(config:ConfigSchema) {
                 location = writer.consoleType ? writer.consoleType.toString() : 'tty'
                 break
             case TargetType.Memory:
-                location = writer.memoryName
+                location = writer.memoryName || writer.name
                 break
             case TargetType.LogFile:
                 location = writer.filePath
@@ -128,8 +172,6 @@ export function setLoggerConfig(config:ConfigSchema) {
                 target.supportsColor = false;
                 target.displayOptions.colorReset = ''
             }
-            if(writer.display.format) target.displayOptions.format = writer.display.format
-            if(writer.display.order) target.displayOptions.order = writer.display.order
 
             const levelNames = ["debug", "log", "info", "warn", "error", "exception", "fatal"]
             let colors = writer.colors
@@ -174,6 +216,20 @@ export function setLoggerConfig(config:ConfigSchema) {
                 }
             }
         }
+        if(writer.display) {
+            if (writer.display.format) target.displayOptions.format = writer.display.format
+            if (writer.display.order) target.displayOptions.order = writer.display.order
+        } else {
+            target.displayOptions.format = FormatType.text
+            target.displayOptions.order = [
+                ElementType.time,
+                ElementType.function,
+                ElementType.source,
+                ElementType.category,
+                ElementType.level,
+                ElementType.message
+            ]
+        }
 
         if(writerSet[writer.name]) {
             throw Error(`LogWriter "${writer.name}" has already been defined`)
@@ -199,12 +255,36 @@ export function setLoggerConfig(config:ConfigSchema) {
     }
 }
 
+/**
+ * Return a configured Logger by name
+ * @param name
+ */
 export function getLogger(name) {
     const logger =  definedLoggers[name]
     if(!logger) {
-        throw Error(`Logger "${name}" not defined`)
+        throw Error('Logger "'+name+'" not defined')
     }
     return logger
+}
+
+/**
+ * Read the accumulated text in the named memory log.
+ * Note that the name of a Memory log is established with the 'memoryName' property of
+ * the writer configuration, or the name of the writer itself if no 'memoryName' is provided.
+ * See the section on Configuration for more info.
+ *
+ * @param name
+ */
+export function readMemoryLog(name) {
+    return memoryCaches[name]
+}
+
+/**
+ * Clears the memory buffer text for this Memory log.
+ * @param name
+ */
+export function clearMemoryLog(name) {
+    memoryCaches[name] = ''
 }
 
 // ------------ end of api section --------------------------------
@@ -375,36 +455,39 @@ export class LogWriter {
     }
 
     startGroup(indent, groupName) {
-        if(this.target.type === TargetType.Console) {
-            const c = this.target.colorCategories['default']
-            if(this.target.location === 'browser') {
-                console.groupCollapsed('%c '+groupName, c.groupStyle || '')
-            } else {
-                const pad = indent ? ' '.repeat(indent*2) : ''
-                const reset = (this.target.displayOptions.colorReset) || ''
-                console.log(pad + applyColor(c.startGroup)+ ' <' + groupName + '> ' + reset)
+        if(this.target.displayOptions.format !== FormatType.json) {
+            if (this.target.type === TargetType.Console) {
+                const c = this.target.colorCategories['default'] || {}
+                if (this.target.location === 'browser') {
+                    console.groupCollapsed('%c ' + groupName, c.groupStyle || '')
+                } else {
+                    const pad = indent ? ' '.repeat(indent * 2) : ''
+                    const reset = (this.target.displayOptions.colorReset) || ''
+                    console.log(pad + applyColor(c.startGroup) + ' <' + groupName + '> ' + reset)
+                }
             }
         }
     }
     endGroup(indent, groupName) {
-        if(this.target.type === TargetType.Console) {
-            const c = this.target.colorCategories['default']
-            if(this.target.location === 'browser') {
-                console.groupEnd()
-            } else {
-                const pad = indent ? ' '.repeat(indent *2) : ''
-                const reset = (this.target.displayOptions.colorReset) || ''
-                console.log(pad + applyColor(c.endGroup) + ' </' + groupName + '> ' + reset)
+        if(this.target.displayOptions.format !== FormatType.json) {
+            if (this.target.type === TargetType.Console) {
+                const c = this.target.colorCategories['default'] || {}
+                if (this.target.location === 'browser') {
+                    console.groupEnd()
+                } else {
+                    const pad = indent ? ' '.repeat(indent * 2) : ''
+                    const reset = (this.target.displayOptions.colorReset) || ''
+                    console.log(pad + applyColor(c.endGroup) + ' </' + groupName + '> ' + reset)
+                }
             }
         }
-
     }
 
     /**
      * Returns the colors to use per display item for a given category and level
      * @param category
      * @param level
-     * @returns {object}
+     * @returns Object containing color info
      */
     private getColors (category, level) {
 
@@ -429,9 +512,33 @@ export class LogWriter {
     }
 
     /**
+     * Support output as JSON
+     */
+    composeJSON(time, category, level, ffl, fmesg, stackdump):string {
+        const job:any = {}
+        const include:any = {}
+        const ps = this.target.displayOptions.order || []
+        ps.forEach(p => {
+            include[p] = true
+        })
+        const { file, func, line } = (ffl || {})
+        job.time = include.time && time
+        job.function = include.function && func
+        job.file = include.source && file
+        job.line = include.source && line
+        job.category = include.category && category
+        job.level = include.level && level
+        job.message = include.message && fmesg
+        if(stackdump) job.stack = stackdump
+
+        return JSON.stringify(job)
+    }
+
+    /**
      * Format the log output
      */
     logFormat (time, category, level, ffl, stackParser, message, ...args) {
+        let fmesg = ''
         const { file, func, line } = (ffl || {})
         const sfx = Number(level.charAt(level.length - 1)) || 0
         let dlvl = level.toUpperCase()
@@ -552,7 +659,8 @@ export class LogWriter {
                 }
             }
 
-            out += formatV(message || '', ...args)
+            fmesg = formatV(message || '', ...args)
+            out += fmesg
         }
         if (this.target.supportsColor) {
             out += this.target.displayOptions.colorReset || ''
@@ -571,6 +679,9 @@ export class LogWriter {
             }
         }
         out += this.target.displayOptions.colorReset || ''
+        if(this.target.displayOptions.format === FormatType.json) {
+            out = this.composeJSON(time, category, level, ffl, fmesg, stackdump)
+        }
         return {out, xargs, stackdump}
     }
 
@@ -582,15 +693,27 @@ export class Logger {
     private stackParser:StackLineParser = new StackLineParser()
 
 
+    /**
+     * return the array of writers attached to this logger
+     */
     getWriters():LogWriter[] {
         return this.writers
     }
 
+    /**
+     * Add a new writer to this logger
+     * @param writer
+     */
     addWriter(writer:LogWriter) {
         if(!this.findWriter(writer.target.name)) {
             this.writers.push(writer)
         }
     }
+
+    /**
+     * Remove a writer from this logger
+     * @param writer
+     */
     removeWriter(writer:LogWriter) {
         let targetName = writer.target.name
         for(let i=0; i<this.writers.length; i++) {
@@ -601,6 +724,11 @@ export class Logger {
             }
         }
     }
+
+    /**
+     * Find a writer by name that belongs to this Logger
+     * @param targetName
+     */
     findWriter(targetName:string):LogWriter {
         for(let i=0; i<this.writers.length; i++) {
             const wr = this.writers[i]
@@ -1083,7 +1211,7 @@ function rgb2ansiCode (str) {
 function expandObject (key, value) {
     if (typeof value === 'undefined') return 'undefined'
     if (value instanceof RegExp) {
-        return '[RegEx]: ' + value.toString()
+        return '[RegEx]: ' + new RegExp(value).toString()
     }
     if (value instanceof Promise) {
         return '[Promise]'
