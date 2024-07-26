@@ -43,7 +43,7 @@ that make it a good choice across a spectrum of logging needs.
 
 ###### Installation
 
-npm install gen-logger
+npm install @tremho/gen-logger
 
 ###### Basic configuration
 
@@ -96,7 +96,7 @@ For example, a Typescript application running under Node might
 want to create a `Log.ts` module that looks like this: 
 
 ```typescript
-import {loadLoggerConfig, getLogger} from 'gen-logger'
+import {loadLoggerConfig, getLogger} from '@tremho/gen-logger'
 
 loadLoggerConfig('./logConfig.json')
 const Log = getLogger('Main')
@@ -116,7 +116,7 @@ Note if you are using plain Javascript rather than Typescript,
 the above code may look something more like this:
 
 ```javascript
-var {loadLoggerConfig, getLogger} = require('gen-logger')
+var {loadLoggerConfig, getLogger} = require('@tremho/gen-logger')
 
 loadLoggerConfig('./logConfig.json')
 var Log = getLogger('Main')
@@ -168,7 +168,7 @@ For example, in the `loggers` section of the configuration:
 and in our `Log` module we could export these as such:
 
 ```typescript
-import {loadLoggerConfig, getLogger} from 'gen-logger'
+import {loadLoggerConfig, getLogger} from '@tremho/gen-logger'
 
 loadLoggerConfig('./logfile.json')
 var LogCon = getLogger('Main')

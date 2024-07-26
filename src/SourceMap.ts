@@ -43,7 +43,7 @@ function getSmxInfo() {
     }
 }
 
-import * as smCodec from 'sourcemap-codec'
+import * as smCodec from '@jridgewell/sourcemap-codec'
 import * as base64 from 'base-64'
 
 /**

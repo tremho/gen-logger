@@ -1,6 +1,6 @@
 {
-  "name": "gen-logger",
-  "version": "1.1.0-prerelease.1",
+  "name": "@tremho/gen-logger",
+  "version": "1.1.0-prerelease.2",
   "description": "Generalized central logging support adaptable to various output sinks",
   "main": "build/src/Log.js",
   "scripts": {
@@ -18,10 +18,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@jridgewell/sourcemap-codec": "^1.5.0",
     "@tremho/gen-format": "^1.1.1-prerelease.1",
     "@types/node": "^14.14.22",
-    "base-64": "^1.0.0",
-    "sourcemap-codec": "^1.4.8"
+    "base-64": "^1.0.0"
   },
   "devDependencies": {
     "inchjs": "^0.4.1",
