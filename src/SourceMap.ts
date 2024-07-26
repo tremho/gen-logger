@@ -86,6 +86,8 @@ function readMapData(filePath) {
             }
             mapData = JSON.parse(mapText)
         }
+        mapData = null // if return is null, it means there is no embedded map data
+        // if it is undefined it means the source file was not found
     }
     return mapData
 }
@@ -135,6 +137,15 @@ export function getSourceMap (ffl) {
             ffl.line = orgLine
         }
     } else {
+        // null flavor checks
+        if(mapData === undefined) {
+            // the original source is unavailable
+            ffl.file = '???'
+            ffl.line = '?'
+        }
+        if(mapData === null) {
+            // no embedded mapping info.  Assume it's not mapped
+        }
         // console.warn('(SAUCECODE) no translation')
     }
     return ffl

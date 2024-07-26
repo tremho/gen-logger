@@ -1,15 +1,16 @@
 {
   "name": "gen-logger",
-  "version": "1.0.0",
+  "version": "1.1.0-prerelease.1",
   "description": "Generalized central logging support adaptable to various output sinks",
   "main": "build/src/Log.js",
   "scripts": {
-    "test": "npm run clean && npm run compile && tap --no-timeout ./build/test/*.test.js",
-    "test-direct": "npm run clean && npm run compile && node build/test/misccov.test.js",
+    "prepublish": "npm test && npm run doc",
+    "test": "npm run clean && npm run build && tap --reporter=base --color --passes --disable-coverage ./build/test/*.test.js",
+    "test-direct": "npm run clean && npm run build && node build/test/misccov.test.js",
     "clean": "rm -fr build css",
-    "compile": "tsc",
-    "start": "npm run clean && npm run compile && node build/start.js",
-    "doc": "npm run clean && npm run compile && inchjs && cd build; tsccd ./; documentation readme --readme-file ../README.md --markdown-toc false --section API src"
+    "build": "tsc",
+    "start": "npm run clean && npm run build && node build/start.js",
+    "doc": "npm run clean && npm run build && inchjs && cd build; tsccd ./; documentation readme --readme-file ../README.md --markdown-toc false --section API src"
   },
   "bin": {
     "smx": "./build/smx/smx.js"
@@ -17,14 +18,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tremho/gen-format": "^1.1.1-prerelease.1",
     "@types/node": "^14.14.22",
     "base-64": "^1.0.0",
-    "gen-format": "file:../gen-format",
     "sourcemap-codec": "^1.4.8"
   },
   "devDependencies": {
     "inchjs": "^0.4.1",
-    "tap": "^14.11.0",
+    "tap": "^21.0.0",
     "ts-clear-classdoc": "^1.0.1"
   }
 }

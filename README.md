@@ -42,14 +42,17 @@ that make it a good choice across a spectrum of logging needs.
 -   Extensible for custom needs
 
 ###### Installation
+
 npm install gen-logger
 
 ###### Basic configuration
+
 Create a JSON file at a conveniently accessible path
 within your project.
 e.g. `logconfig.json`
 
 and enter the following:
+
 ```json
 {
   "loggers": [
@@ -66,6 +69,7 @@ and enter the following:
   ]
 }
 ```
+
 This defines the most basic logger configuration.
 It defines a single logger named "Main" that will output
 to one target ('Console'). None of the many options
@@ -79,6 +83,7 @@ application.  Refer to the _Configuration_ section for
 tips on how to tailor loggers to your needs.
 
 ###### Basic use
+
 Once you have configured a set of loggers, you can 
 start using them in  your code.
 
@@ -98,7 +103,9 @@ const Log = getLogger('Main')
 
 export default Log
 ```
+
 and then other modules can use this as follows:
+
 ```typescript
 import Log from './Log'
 
@@ -128,6 +135,7 @@ JS object directly, and then set the configuration with
 `setLoggerConfig`
 
 ###### Multiple loggers, and multiple outputs
+
 There can be multiple loggers defined and each logger
 may output to one or more writer targets. These targets
 may be configured to handle only logs of a particular category
@@ -156,6 +164,7 @@ For example, in the `loggers` section of the configuration:
     }
 ], 
 ```
+
 and in our `Log` module we could export these as such:
 
 ```typescript
@@ -167,8 +176,8 @@ var LogFile = getLogger('File')
 var LogBoth = getLogger('Combined')
 
 export {LogCon, LogFile, LogBoth}
-
 ```
+
 and import and use later like this:
 
 ```typescript
@@ -182,7 +191,6 @@ LogBoth.log('this goes to both console and file')
 ###### Types of log writer targets
 
 ###### Implementing File and Service endpoints
- 
 
 ###### Use in _Node_ projects
 
@@ -195,8 +203,6 @@ LogBoth.log('this goes to both console and file')
 ###### Extending and customizing
 
 ###### Reference and API
-
-
 
 ## API
 
@@ -293,9 +299,20 @@ Clears the memory buffer text for this Memory log.
 
 A target names the target type and location
 
+#### Parameters
+
+-   `name`  
+-   `type`  
+-   `location`  
+-   `color`  
+
 ### LogWriter
 
 Defines where the output will appear, and what categories/levels are filtered
+
+#### Parameters
+
+-   `target`  
 
 #### getColors
 
@@ -333,6 +350,7 @@ Format the log output
 -   `ffl`  
 -   `stackParser`  
 -   `message`  
+-   `args` **...any** 
 
 ### getWriters
 
@@ -379,193 +397,385 @@ Direct output to all writers, subject to filtering.
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### debug8
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug7
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### debug6
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug5
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### debug4
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug3
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### debug2
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug1
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### debug0
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug
 
 Synonymous with debug0
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log9
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### log8
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log7
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### log6
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log5
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### log4
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log3
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### log2
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log1
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### log0
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### log
 
 Synonymous with log0
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info9
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### info8
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info7
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### info6
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info5
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### info4
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info3
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### info2
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info1
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### info0
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### info
 
 Synonymous with info0
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn9
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### warn8
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn7
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### warn6
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn5
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### warn4
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn3
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### warn2
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn1
 
 Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### warn0
 
 Outputs log at the named level granularity
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### warn
 
 Synonymous with warn0
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### error
 
 Used to output a log related to an error.
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### exception
 
 Used to output a log related to an exception.
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### fatal
 
 Used to output a log related to non-recoverable crash.
 
+#### Parameters
+
+-   `args` **...any** 
+
 ### crash
 
 alias for fatal
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### group
 

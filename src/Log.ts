@@ -1,4 +1,4 @@
-import F, {formatV} from 'gen-format'
+import F, {formatV} from '@tremho/gen-format'
 
 import Configuration, {ConfigSchema, DisplayOptions, ElementType, FormatType, TargetType} from "./Configuration"
 import {StackLineParser} from "./StackLineParser";
@@ -539,7 +539,7 @@ export class LogWriter {
      */
     logFormat (time, category, level, ffl, stackParser, message, ...args) {
         let fmesg = ''
-        const { file, func, line } = (ffl || {})
+        const { file, func, line, column } = (ffl || {})
         const sfx = Number(level.charAt(level.length - 1)) || 0
         let dlvl = level.toUpperCase()
         if (!sfx) dlvl = dlvl.substring(0, dlvl.length - 1)
@@ -590,6 +590,7 @@ export class LogWriter {
                 out += c.line
             }
             out += `${line || ''}`
+            // out += `:${column || ''}`
             if (this.target.supportsColor) {
                 out += this.target.displayOptions.colorReset || ''
             }
