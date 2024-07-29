@@ -31,10 +31,10 @@ that make it a good choice across a spectrum of logging needs.
 -   Support Console, Memory, File, and Service type output targets.
 -   Organize logs by a configurable set of categories
 -   Route logs to different outputs
--   Supports 50 logging levels (five named levels with 10 granlularities each)
+-   Supports 60 logging levels (six named levels with 10 granlularities each)
 -   Supports grouping of log messages
 -   Supports Color output 
--   Supports 'Debugger Console' output for color and collapsible groups
+-   Supports 'Debugger Console' output for color and collapsible groups in browser logging
 -   Supports text console with ANSI colors
 -   Configurable output
 -   Stack tracing with source map support
@@ -132,7 +132,41 @@ available in a browser context.
 In this instance, you can use a script load or an AJAX operation
 to bring in the config json, or else construct the
 JS object directly, and then set the configuration with
-`setLoggerConfig`
+`setLoggerConfig`:
+
+Note that the logconfig.json file must exist in your runtime path, 
+so you may need to add a copy of this file into the output directory
+to your build steps.
+Especially if you are using an intermediate build step, such as with typescript or babel.
+
+If you are using a log in a browser context, consider using the 'Browser' console type instead of
+the the default 'tty' for your writer.  This will integrate with the Google-style debugging console of most browsers 
+and will support collapsible groups and other features. Read more about this later in this document.
+
+###### Creating a simple default logger
+If you are looking for a simple, ready to use Console logger (color), you can choose to not use
+a configuration file and instead use `createDefaultLogger()` in your Log.js file like this:
+
+```typescript
+import {createDefaultLogger} from '@tremho/gen-logger'
+
+const Log = createDefaultLogger();
+
+export default Log
+```
+
+or just
+
+```typescript
+import {createDefaultLogger} from '@tremho/gen-logger'
+export default createDefaultLogger()
+```
+
+or for non-typescript javascript
+```javascript
+var {createDefaultLogger} = require('@tremho/gen-logger')
+module.exports = createDefaultLogger()
+```
 
 ###### Multiple loggers, and multiple outputs
 
@@ -190,7 +224,101 @@ LogBoth.log('this goes to both console and file')
 
 ###### Types of log writer targets
 
-###### Implementing File and Service endpoints
+There are 4 basic types of writers defined:
+- Console - outputs to the console display.  There are two forms of this, dictated by the "consoleType" property.
+- LogFile - outputs to a file in the filesystem.
+- Memory - records logs in memory
+- Service - sends log data to a web service
+
+These types are declared by name in the writer `type` property.
+There are additional fields for the writer configuration that may apply per 'type' choice:
+
+- For 'Console', there is `consoleType`.  This may be either `tty` or `browser`. The default is `tty`.
+Choose `browser` for integration into browser console displays.
+
+- For 'LogFile', there is `filePath` which is a path to the log file
+- 
+- For 'Memory', there is `memoryName` which names the memory block for later access. If this is not given,
+the name of the writer is used for the memory name.
+- 
+- For 'Service', there is `serviceUrl` which is the url for the service that is called.
+
+
+###### Implementing custom writers
+
+There is an existing node-compatible file writer available for easy construction.
+```typescript
+const writer = createLogFileWriter(name, filePath)
+```
+and then you can add it to your logger with
+```typescript
+Log.addWriter(writer)
+```
+but for Service writers or any other custom output,  you must create a custom writer.
+
+This is relatively easy to do.  Create your Logger object programmatically and attach
+a custom writer, like this:
+
+```typescript
+import {Logger, LogTarget, LogWriter} from "../../gen-logger";
+
+const Log = new Logger();
+
+// Define a log target with the name 'test', and a type name (anything other than Console or Memory or LogFile)
+// and a reference (e.g. a location or identifier)
+const target = new LogTarget('test', 'MyCustom', 'myReference')
+
+// This will be our custom output function
+target.outputLogToDestination = (location: string, formatted: string, category: string, level: string, stack: string | null, xargs: any[] | null) => {
+    // here we could log to a file, output to a service, update a DB, or whatever.
+    console.log(formatted)
+}
+// we might want to have the formatted message in json rather than plain text
+target.displayOptions.format = 'json'
+
+// if we want stack information to be passed to our callback, we must set the target options for that,
+// setting stack: true for any log level that you desire a stack for. In this case, all of them.
+// (not necessary if no stack is needed)
+target.colorLevels = {
+    trace: {stack: true},
+    debug: {stack: true},
+    log: {stack: true},
+    info: {stack: true},
+    warn: {stack: true},
+    error: {stack: true},
+    exception: {stack: true},
+    fatal: {stack: true}
+}
+// if your custom output supports ansi colors, you can define other color options here as well.
+
+
+// now create and add this writer to our logger
+const writer = new LogWriter(target)
+Log.addWriter(writer)
+export default Log
+
+```
+using the pattern above, one can create custom log writers for file, service, database, whatever.
+
+###### Default LogFile writer example
+
+A basic logfile writer is built-in, and available for NodeJS projects.
+It will not work for browser implementations.
+
+```typescript
+import {Logger, createLogFileWriter} from '@tremho/gen-logger'
+
+const Log = new Logger()
+const writer = createLogFileWriter("MyLogger", 'logs/log.txt')
+Log.addWriter(writer)
+export default Log
+```
+This will create a directory named 'logs' and there will be one log file (named 'log.txt') in this directory after
+the first one, and one named 'log1.txt' after the second run, one named 'log2.txt' after the third run, and so on.
+The log will contain a series of json objects separated by newlines.
+No stack trace is captured with this writer.
+The highest numbered log is the most current.
+You are responsible for cleaning up old log files.
 
 ###### Use in _Node_ projects
 
@@ -198,11 +326,8 @@ LogBoth.log('this goes to both console and file')
 
 ###### Uses for the Memory Log Writer
 
-###### Creating a Logger programmatically
+###### Setting Log Levels
 
-###### Extending and customizing
-
-###### Reference and API
 
 ## API
 
@@ -380,6 +505,89 @@ Find a writer by name that belongs to this Logger
 
 -   `targetName`  
 
+### includeAllLevels
+
+Include all the levels in the writer output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+
+### excludeAllLevels
+
+Exclude all levels from the writer output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+
+### includeLevel
+
+Include a level for the named writer to output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+-   `level`  name of level. note that granular levels are not supported. Only primary level names.
+
+### excludeLevel
+
+Exclude a level for the named writer.
+The writer will ignore all logs for this level
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+-   `level`  name of level. note that granular levels are not supported. Only primary level names.
+
+### setMininumLevel
+
+Set a minimum level.
+This level and above will be output by the writer.
+levels below this will be excluded.
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+-   `minLevel`  
+-   `level`  name of level. note that granular levels are not supported. Only primary level names.
+
+### includeAllCategories
+
+Include all the categories in the writer output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+
+### excludeAllCategories
+
+Exclude all levels from the writer output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+
+### includeCategory
+
+Include a category for the named writer to output
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+-   `level`  
+-   `category`  name of category.
+
+### excludeCategory
+
+Exclude a category for the named writer.
+This writer will ignore logs in this category.
+
+#### Parameters
+
+-   `writerName`  name of writer to affect
+-   `category`  \-- name of category
+
 ### outToWriters
 
 Direct output to all writers, subject to filtering.
@@ -392,6 +600,94 @@ Direct output to all writers, subject to filtering.
 -   `level` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
 -   `message` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String)** 
 -   `args` **any** arguments used for formatting message
+
+### trace9
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace8
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace7
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace6
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace5
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace4
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace3
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace2
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace1
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace0
+
+Outputs log at the named level granularity
+
+#### Parameters
+
+-   `args` **...any** 
+
+### trace
+
+Synonymous with trace0
+
+#### Parameters
+
+-   `args` **...any** 
 
 ### debug9
 
@@ -772,6 +1068,70 @@ Used to output a log related to non-recoverable crash.
 ### crash
 
 alias for fatal
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Trace
+
+alias for trace
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Debug
+
+alias for debug
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Log
+
+alias for log
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Info
+
+alias for info
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Warn
+
+alias for warb
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Error
+
+alias for error
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Critical
+
+alias for fatal
+
+#### Parameters
+
+-   `args` **...any** 
+
+### Exception
+
+alias for exception
 
 #### Parameters
 

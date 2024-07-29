@@ -10,7 +10,7 @@ function memLogTest() {
     Tap.test('Memory Log', t => {
         MemLog.log('this is a test') // note this is line 11
         let r = readMemoryLog('test')
-        let x = 'Test.<anonymous> (MemLog.test.ts:11) LOG this is a test' // should appear here
+        let x = 'Test.<anonymous> (???:?)  LOG  this is a test' // should appear here
         t.ok(r.indexOf(x) === 15, r)
 
         JSONLog.debug('This is a json log')

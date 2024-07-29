@@ -1,8 +1,15 @@
 import F, {formatV} from '@tremho/gen-format'
 
-import Configuration, {ConfigSchema, DisplayOptions, ElementType, FormatType, TargetType} from "./Configuration"
-import {StackLineParser} from "./StackLineParser";
+import Configuration, {ConfigSchema, DisplayOptions, ElementType, FormatType, nfs, TargetType} from "./Configuration"
+import {FuncFileLine, StackLineParser} from "./StackLineParser";
 import {getSourceMap} from "./SourceMap";
+
+let npath:any
+if(nfs) {
+    npath = require('path')
+}
+
+
 /*
 const trace = require('tns-core-modules/trace')
 const application = require('tns-core-modules/application')
@@ -58,9 +65,56 @@ const Log = getLogger('Default')
 
 // ------------ start of api section --------------------------------
 
+const levelNames = ["trace", "debug", "log", "info", "warn", "error", "exception", "fatal"]
+
 let memoryCaches:any = {}
 let definedLoggers:any = {}
 let knownCategories:string[] = []
+
+export function createLogFileWriter(name:string, filePath:string):LogWriter {
+    const target = new LogTarget(name, TargetType.LogFile, filePath)
+    target.displayOptions.format = FormatType.json
+    target.outputLogToDestination = (location:string, formatted:string, category:string, level:string, stack:string|null, xargs:any[]|null) => {
+        if(!target.state) {
+            target.state = { open: rotateLogFile(filePath) }
+        }
+        const file = target.state.open
+        try {
+            nfs.appendFileSync(file, formatted+'\n')
+        } catch(e) {
+            console.error('Error writing to logfile '+filePath, e)
+        }
+    }
+    return new LogWriter(target)
+}
+
+function rotateLogFile(filePath:string) {
+    if(!nfs) {
+        console.warn("no file interface available")
+        return filePath;
+    }
+    const logDir = npath.dirname(filePath)
+    if(!nfs.existsSync(logDir)) nfs.mkdirSync(logDir, {recursive: true})
+
+    if(!nfs.existsSync(filePath)) return filePath
+
+    let hn = 0;
+    let logName = npath.basename(filePath)
+    let xi = logName.lastIndexOf('.')
+    if(xi !== -1) logName = logName.substring(0, xi)
+    const ext = npath.extname(filePath)
+    const files = nfs.readdirSync(logDir)
+    for (let f of files) {
+        xi = f.lastIndexOf('.')
+        if(xi !== -1) f = f.substring(0, xi)
+        if (f.startsWith(logName)) {
+            const n = Number(f.substring(f.length - 1))
+            if (n > hn) hn = n
+        }
+    }
+    return npath.join(logDir, logName)+(hn+1)+ext;
+
+}
 
 /**
  * Returns the set of established categories as defined in configuration.
@@ -73,7 +127,7 @@ export function getCategories() {
  * Adds a new category to the set of known categories
  * @param category
  */
-export function addCategory(category) {
+export function addCategory(category:string) {
     knownCategories.push(category)
 }
 
@@ -81,7 +135,7 @@ export function addCategory(category) {
  * Removes a category from the set of known categories
  * @param category
  */
-export function removeCategory(category) {
+export function removeCategory(category:string) {
     let n = knownCategories.indexOf(category)
     if(n !== -1) {
         knownCategories.splice(n,1)
@@ -120,6 +174,84 @@ export function setLoggerConfigJSON(json:string) {
 }
 
 /**
+ * Creates and returns a default logger suitable for general console purposes
+ * It has a single writer ('Console') that outputs in color.
+ */
+export function createDefaultLogger() : Logger {
+    setLoggerConfig( {
+        loggers: [
+            {
+                name: 'Default',
+                writers: ['Console']
+            }
+        ],
+        writers: [
+            {
+                name: 'Console',
+                type: 'Console',
+                colors: { inherits: 'Standard' },
+                display: {
+                    supportsColor: true
+                }
+            }
+        ],
+        colorSchemes : [
+            {
+                name: 'Standard',
+                default: {
+                    time: 1,
+                    message: 4,
+                    func: 24,
+                    file: 240,
+                    line: 0,
+                    startGroup: ["#FFF", "#00F"],
+                    endGroup: ["#555", "#ACA"],
+                    trace: {
+                        level: 8,
+                        message: 8
+                    },
+                    debug: {
+                        level: 142,
+                        message: 108
+                    },
+                    log: {
+                        level: 2,
+                        message: 22
+                    },
+                    info: {
+                        level: 45,
+                        message: 18
+                    },
+                    warn: {
+                        level: [0,11],
+                        message: 3
+                    },
+                    error: {
+                        level: [0,1],
+                        message: 1,
+                        stack: true,
+                        stackColor: 242
+                    },
+                    fatal: {
+                        level: ["#FFF", "#000"],
+                        message: 1,
+                        stack: true,
+                        stackColor: 8
+                    },
+                    exception: {
+                        level: [0, 1],
+                        message: 6,
+                        stack: true,
+                        stackColor: 242
+                    }
+                }
+            }
+        ]
+    })
+    return getLogger('Default')
+}
+
+/**
  * Use to set the Logger configuration from an object resolved from JSON or
  * constructed dynamically.
  * Use in browser-based contexts, since `loadLoggerConfig` in unavailable without Node support.
@@ -138,7 +270,7 @@ export function setLoggerConfig(config:ConfigSchema) {
     }
     // create the set of writers
     const writers = config.writers || []
-    const writerSet = {}
+    const writerSet:any = {}
     for(let i=0; i<writers.length; i++) {
         const writer = writers[i]
         let location
@@ -173,8 +305,7 @@ export function setLoggerConfig(config:ConfigSchema) {
                 target.displayOptions.colorReset = ''
             }
 
-            const levelNames = ["debug", "log", "info", "warn", "error", "exception", "fatal"]
-            let colors = writer.colors
+            let colors:any = writer.colors
             if(colors) {
                 if(colors.inherits) {
                     const cfg = new Configuration()
@@ -259,7 +390,7 @@ export function setLoggerConfig(config:ConfigSchema) {
  * Return a configured Logger by name
  * @param name
  */
-export function getLogger(name) {
+export function getLogger(name:string) {
     const logger =  definedLoggers[name]
     if(!logger) {
         throw Error('Logger "'+name+'" not defined')
@@ -275,7 +406,7 @@ export function getLogger(name) {
  *
  * @param name
  */
-export function readMemoryLog(name) {
+export function readMemoryLog(name:string) {
     return memoryCaches[name]
 }
 
@@ -283,7 +414,7 @@ export function readMemoryLog(name) {
  * Clears the memory buffer text for this Memory log.
  * @param name
  */
-export function clearMemoryLog(name) {
+export function clearMemoryLog(name:string) {
     memoryCaches[name] = ''
 }
 
@@ -297,6 +428,9 @@ export function clearMemoryLog(name) {
 //     func: 24,
 //     file: 240,
 //     line: 0,
+//     trace: {
+//       ???
+//     },
 //     debug: {
 //         level: 142,
 //         message: 108,
@@ -336,30 +470,45 @@ export function clearMemoryLog(name) {
 // }
 
 /**
+ * The writer output callback for custom writers
+ */
+interface LogWriterOutput {
+    outputLogToDestination?: (location: string, formatted: string, category: string, level: string, stack: string | null, xargs: any[] | null) => void
+}
+
+/**
  * A target names the target type and location
  */
-export class LogTarget {
-    public name:string
-    public type:TargetType
-    public location: string // file path or service url for LogFile or Service type; App/Dev for Console
-    public supportsColor: boolean // true if ANSI color codes are supported on this device
-    public colorCategories:any = {}
-    public colorLevels:any = {}
-    public displayOptions:DisplayOptions = new DisplayOptions()
+export class LogTarget implements LogWriterOutput {
+    public name: string
+    public type: TargetType | string
+    public location?: string // file path or service url for LogFile or Service type; App/Dev for Console
+    public supportsColor?: boolean // true if ANSI color codes are supported on this device
+    public colorCategories?: any
+    public colorLevels?: any
+    public state?:any
+    public displayOptions: DisplayOptions = new DisplayOptions()
 
-    constructor(name:string, type:TargetType, location:string, color?:boolean) {
+    constructor(name: string, type: TargetType | string, location?: string, color?: boolean) {
         this.name = name
         this.type = type
         this.location = location
         this.supportsColor = color || false // N.B. intentionally redundant to displayOptions.supportsColor
+        this.colorLevels = {}
+        this.colorCategories = {default: {}}
         this.displayOptions = {
             supportsColor: color || false,
-            colorReset:  color ? '\u001b[0m' : '',
+            colorReset: color ? '\u001b[0m' : '',
             prefix: '- ',
             format: FormatType.text, // default, config may change
             order: [ElementType.time, ElementType.function, ElementType.source, ElementType.category, ElementType.level, ElementType.message], // default
         }
     }
+
+    outputLogToDestination(location: string, formatted: string, category: string, level: string, stack: string | null, xargs: any[] | null) {
+        console.warn(`>> outputToDestination must be immplemented in custom writer for logger ${this.name}>>`)
+    }
+
 }
 
 /**
@@ -370,10 +519,11 @@ export class LogWriter {
     private categoryExcludes: string[] = []
     private levelExcludes: string[] = []
 
-    constructor(target) {
+    constructor(target:LogTarget) {
         this.target = target
     }
-    includeCategory(category:string, ...more) {
+
+    includeCategory(category:string, ...more:string[]) {
         let n = this.categoryExcludes.indexOf(category)
         if(n !== -1) {
             this.categoryExcludes.splice(n, 1)
@@ -384,7 +534,7 @@ export class LogWriter {
         }
 
     }
-    excludeCategory(category:string, ...more) {
+    excludeCategory(category:string, ...more:string[]) {
         if (this.categoryExcludes.indexOf(category) === -1) {
             this.categoryExcludes.push(category)
         }
@@ -393,7 +543,8 @@ export class LogWriter {
             if (next) this.excludeCategory(next, ...more)
         }
     }
-    includeLevel(level:string, ...more) {
+
+    includeLevel(level:string, ...more:string[]) {
         let n = this.levelExcludes.indexOf(level)
         if(n !== -1) {
             this.levelExcludes.splice(n, 1)
@@ -403,7 +554,8 @@ export class LogWriter {
             if(next) this.includeLevel(next, ...more)
         }
     }
-    excludeLevel(level:string, ...more) {
+
+    excludeLevel(level:string, ...more:string[]) {
         if (this.levelExcludes.indexOf(level) === -1) {
             this.levelExcludes.push(level)
         }
@@ -413,15 +565,24 @@ export class LogWriter {
         }
     }
 
-    isCategoryExcluded(category) {
+    clearLevelExclusions() {
+        this.levelExcludes = []
+    }
+
+    clearCategoryExclusions() {
+        this.categoryExcludes = []
+    }
+
+     isCategoryExcluded(category:string) {
         return this.categoryExcludes.indexOf(category) !== -1
     }
-    isLevelExcluded(level) {
+
+    isLevelExcluded(level:string) {
         let lvlType = level.substring(0, level.length-1)
         return this.levelExcludes.indexOf(level) !== -1 || this.levelExcludes.indexOf(lvlType) !== -1
     }
 
-    outputLog(formatted, category, level, stack, xargs) {
+    outputLog(formatted:string, category:string, level:string, stack:string|null, xargs:any[]|null) {
         switch(this.target.type) {
             case TargetType.Console: {
                 const googleColor = this.target.location === 'browser'
@@ -435,26 +596,20 @@ export class LogWriter {
                 }
             }
             case TargetType.Memory: {
-                const name = this.target.location
+                const name = this.target.location as string
                 let str = memoryCaches[name] || ''
                 str += formatted + '\n'
                 memoryCaches[name] = str
                 return
             }
-            case TargetType.LogFile: {
-                const path = this.target.location
-                // append to this file
-                return
-            }
-            case TargetType.Service: {
-                const url = this.target.location
-                // send to this url
+            default: { // LogFile and Service
+                this.target.outputLogToDestination(this.target.location ?? '', formatted, category, level, stack, xargs)
                 return
             }
         }
     }
 
-    startGroup(indent, groupName) {
+    startGroup(indent:number, groupName:string) {
         if(this.target.displayOptions.format !== FormatType.json) {
             if (this.target.type === TargetType.Console) {
                 const c = this.target.colorCategories['default'] || {}
@@ -468,7 +623,7 @@ export class LogWriter {
             }
         }
     }
-    endGroup(indent, groupName) {
+    endGroup(indent:number, groupName:string) {
         if(this.target.displayOptions.format !== FormatType.json) {
             if (this.target.type === TargetType.Console) {
                 const c = this.target.colorCategories['default'] || {}
@@ -489,9 +644,10 @@ export class LogWriter {
      * @param level
      * @returns Object containing color info
      */
-    private getColors (category, level) {
+    private getColors (category:string, level:string) {
 
-        const glevel = level && isFinite(Number(level.charAt(level.length - 1))) && level.substring(0, level.length - 1)
+        let glevel = level && isFinite(Number(level.charAt(level.length - 1))) && level.substring(0, level.length - 1)
+        if(!glevel) glevel = ''
         const def = this.target.colorCategories['default'] || {}
         const lvl = this.target.colorLevels[level] || this.target.colorLevels[glevel] || def[level] || def[glevel] || {}
         const cat = this.target.colorCategories[category] || {}
@@ -507,14 +663,14 @@ export class LogWriter {
             level: applyColor(catLevel.level || catGlevel.level || cat.level || lvl.level || def.level),
             category: applyColor(catLevel.category || catGlevel.category || cat.category || lvl.category || def.category),
             message: applyColor(catLevel.message || catGlevel.message || cat.message || lvl.message || def.message),
-            stack: applyColor(lvl.stack && lvl.stackColor)
+            stack: lvl.stackColor? applyColor(lvl.stack && lvl.stackColor) : lvl.stack
         }
     }
 
     /**
      * Support output as JSON
      */
-    composeJSON(time, category, level, ffl, fmesg, stackdump):string {
+    composeJSON(time:number, category:string, level:string, ffl:FuncFileLine, fmesg:string, stackdump:string):string {
         const job:any = {}
         const include:any = {}
         const ps = this.target.displayOptions.order || []
@@ -537,7 +693,7 @@ export class LogWriter {
     /**
      * Format the log output
      */
-    logFormat (time, category, level, ffl, stackParser, message, ...args) {
+    logFormat (time:number, category:string, level:string, ffl:FuncFileLine, stackParser:StackLineParser, message:string, ...args:any[]) {
         let fmesg = ''
         const { file, func, line, column } = (ffl || {})
         const sfx = Number(level.charAt(level.length - 1)) || 0
@@ -559,7 +715,7 @@ export class LogWriter {
         if (this.target.supportsColor) {
             out += this.target.displayOptions.colorReset || ''
         }
-        if (this.target.displayOptions.order.indexOf(ElementType.time) !== -1) {
+        if (this.target.displayOptions.order?.indexOf(ElementType.time) !== -1) {
             if (this.target.supportsColor) {
                 out += c.time
             }
@@ -569,7 +725,7 @@ export class LogWriter {
             }
             out += ' '
         }
-        if (this.target.displayOptions.order.indexOf(ElementType.source) !== -1) {
+        if (this.target.displayOptions.order?.indexOf(ElementType.source) !== -1) {
             if (this.target.supportsColor) {
                 out += c.func
             }
@@ -596,7 +752,7 @@ export class LogWriter {
             }
             out += ') '
         }
-        if (this.target.displayOptions.order.indexOf(ElementType.category) !== -1) {
+        if (this.target.displayOptions.order?.indexOf(ElementType.category) !== -1) {
             if (this.target.supportsColor) {
                 out += c.category
             }
@@ -606,17 +762,17 @@ export class LogWriter {
             }
             if (category) out += ' '
         }
-        if (this.target.displayOptions.order.indexOf(ElementType.level) !== -1) {
+        if (this.target.displayOptions.order?.indexOf(ElementType.level) !== -1) {
             if (this.target.supportsColor) {
                 out += c.level
             }
-            out += `${dlvl || ''}`
+            out += ` ${dlvl || ''} `
             if (this.target.supportsColor) {
                 out += this.target.displayOptions.colorReset || ''
             }
             out += ' '
         }
-        if (this.target.displayOptions.order.indexOf(ElementType.message) !== -1) {
+        if (this.target.displayOptions.order?.indexOf(ElementType.message) !== -1) {
             if (this.target.supportsColor) {
                 out += c.message
             }
@@ -681,7 +837,7 @@ export class LogWriter {
         }
         out += this.target.displayOptions.colorReset || ''
         if(this.target.displayOptions.format === FormatType.json) {
-            out = this.composeJSON(time, category, level, ffl, fmesg, stackdump)
+            out = this.composeJSON(time, category, level, ffl, fmesg, stackdump ?? '')
         }
         return {out, xargs, stackdump}
     }
@@ -730,14 +886,134 @@ export class Logger {
      * Find a writer by name that belongs to this Logger
      * @param targetName
      */
-    findWriter(targetName:string):LogWriter {
+    findWriter(targetName:string):LogWriter|null {
         for(let i=0; i<this.writers.length; i++) {
             const wr = this.writers[i]
-            if (wr.target.name === targetName) {
+            if (wr.target.name.toUpperCase() === targetName.toUpperCase()) {
                 return wr
             }
         }
         return null
+    }
+
+    /**
+     * Include all the levels in the writer output
+     * @param writerName - name of writer to affect
+     */
+    includeAllLevels(writerName:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.clearLevelExclusions()
+        }
+    }
+
+    /**
+     * Exclude all levels from the writer output
+     * @param writerName - name of writer to affect
+     */
+    excludeAllLevels(writerName:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.excludeLevel('trace', ...levelNames)
+        }
+
+    }
+
+    /**
+     * Include a level for the named writer to output
+     *
+     * @param writerName - name of writer to affect
+     * @param level - name of level. note that granular levels are not supported. Only primary level names.
+     */
+    includeLevel(writerName:string, level:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.includeLevel(level.toLowerCase())
+        }
+
+    }
+    /**
+     * Exclude a level for the named writer.
+     * The writer will ignore all logs for this level
+     *
+     * @param writerName - name of writer to affect
+     * @param level - name of level. note that granular levels are not supported. Only primary level names.
+     */
+    excludeLevel(writerName:string, level:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.excludeLevel(level.toLowerCase())
+        }
+    }
+
+    /**
+     * Set a minimum level.
+     * This level and above will be output by the writer.
+     * levels below this will be excluded.
+     *
+     * @param writerName - name of writer to affect
+     * @param level - name of level. note that granular levels are not supported. Only primary level names.
+     */
+    setMininumLevel(writerName:string, minLevel:string) {
+        const wr = this.findWriter(writerName)
+        const pick = levelNames.indexOf(minLevel.toLowerCase())
+        if(pick !== -1) {
+            const pickedLevels = levelNames.slice(pick)
+            if (wr) {
+                this.excludeAllLevels(writerName)
+                wr.includeLevel(minLevel, ...pickedLevels)
+            }
+        }
+
+    }
+    /**
+     * Include all the categories in the writer output
+     * @param writerName - name of writer to affect
+     */
+    includeAllCategories(writerName:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.clearCategoryExclusions()
+        }
+    }
+    /**
+     * Exclude all levels from the writer output
+     * @param writerName - name of writer to affect
+     */
+    excludeAllCategories(writerName:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.excludeCategory('trace', ...levelNames)
+        }
+
+    }
+    /**
+     * Include a category for the named writer to output
+     *
+     * @param writerName - name of writer to affect
+     * @param category - name of category.
+     */
+    includeCategory(writerName:string, level:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.includeCategory(level)
+        }
+
+    }
+
+    /**
+     * Exclude a category for the named writer.
+     * This writer will ignore logs in this category.
+     *
+     * @param writerName - name of writer to affect
+     * @param category -- name of category
+     */
+    excludeCategory(writerName:string, category:string) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.excludeCategory(category)
+        }
+
     }
 
     /**
@@ -769,7 +1045,7 @@ export class Logger {
      * @param {string} message
      * @param {*} args arguments used for formatting message
      */
-    outToWriters (time, ffl, category, level, message, ...args) {
+    outToWriters (time:number, ffl:FuncFileLine, category:string, level:string, message:string, ...args:any[]) {
         const typeGran = this._levelToType(level)
         for (let i = 0; i < this.writers.length; i++) {
             const writer = this.writers[i]
@@ -791,7 +1067,7 @@ export class Logger {
             // groups introduce indents
             const pad = this.groups.length ? ' '.repeat(this.groups.length * 2) : ''
             // trace.write(pad + formatted, category, typeGran.type)
-            writer.outputLog(pad+formatted, category, typeGran.type, stackdump, xargs)
+            writer.outputLog(pad+formatted, category, typeGran.type, stackdump ?? '', xargs ?? null)
         }
     }
 
@@ -801,7 +1077,7 @@ export class Logger {
      * @param args
      * @private
      */
-    _morph (level, ...args) {
+    _morph (level:string, ...args:any[]) {
         // TODO:Check
         // if (global.__snapshot) return; // disallow if we are in snapshot release mode
 
@@ -834,243 +1110,336 @@ export class Logger {
     }
 
     /** Outputs log at the named level granularity */
-    debug9 (...args) {
+    trace9 (...args:any[]) {
+        this._morph('trace9', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace8 (...args:any[]) {
+        this._morph('trace8', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace7 (...args:any[]) {
+        this._morph('trace7', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace6 (...args:any[]) {
+        this._morph('trace6', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace5 (...args:any[]) {
+        this._morph('trace5', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace4 (...args:any[]) {
+        this._morph('trace4', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace3 (...args:any[]) {
+        this._morph('trace3', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace2 (...args:any[]) {
+        this._morph('trace2', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace1 (...args:any[]) {
+        this._morph('trace1', ...args)
+    }
+    /** Outputs log at the named level granularity */
+    trace0 (...args:any[]) {
+        this._morph('trace0', ...args)
+    }
+    /** Synonymous with trace0 */
+    trace (...args:any[]) {
+        this.trace0(...args)
+    }
+
+
+    /** Outputs log at the named level granularity */
+    debug9 (...args:any[]) {
         this._morph('debug9', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug8 (...args) {
+    debug8 (...args:any[]) {
         this._morph('debug8', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug7 (...args) {
+    debug7 (...args:any[]) {
         this._morph('debug7', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug6 (...args) {
+    debug6 (...args:any[]) {
         this._morph('debug6', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug5 (...args) {
+    debug5 (...args:any[]) {
         this._morph('debug5', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug4 (...args) {
+    debug4 (...args:any[]) {
         this._morph('debug4', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug3 (...args) {
+    debug3 (...args:any[]) {
         this._morph('debug3', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug2 (...args) {
+    debug2 (...args:any[]) {
         this._morph('debug2', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug1 (...args) {
+    debug1 (...args:any[]) {
         this._morph('debug1', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    debug0 (...args) {
+    debug0 (...args:any[]) {
         this._morph('debug0', ...args)
     }
 
     /** Synonymous with debug0 */
-    debug (...args) {
+    debug (...args:any[]) {
         this.debug0(...args)
     }
 
     /** Outputs log at the named level granularity */
-    log9 (...args) {
+    log9 (...args:any[]) {
         this._morph('log9', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log8 (...args) {
+    log8 (...args:any[]) {
         this._morph('log8', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log7 (...args) {
+    log7 (...args:any[]) {
         this._morph('log7', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log6 (...args) {
+    log6 (...args:any[]) {
         this._morph('log6', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log5 (...args) {
+    log5 (...args:any[]) {
         this._morph('log5', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log4 (...args) {
+    log4 (...args:any[]) {
         this._morph('log4', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log3 (...args) {
+    log3 (...args:any[]) {
         this._morph('log3', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log2 (...args) {
+    log2 (...args:any[]) {
         this._morph('log2', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log1 (...args) {
+    log1 (...args:any[]) {
         this._morph('log1', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    log0 (...args) {
+    log0 (...args:any[]) {
         this._morph('log0', ...args)
     }
 
     /** Synonymous with log0 */
-    log (...args) {
+    log (...args:any[]) {
         this.log0(...args)
     }
 
     /** Outputs log at the named level granularity */
-    info9 (...args) {
+    info9 (...args:any[]) {
         this._morph('info9', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info8 (...args) {
+    info8 (...args:any[]) {
         this._morph('info8', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info7 (...args) {
+    info7 (...args:any[]) {
         this._morph('info7', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info6 (...args) {
+    info6 (...args:any[]) {
         this._morph('info6', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info5 (...args) {
+    info5 (...args:any[]) {
         this._morph('info5', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info4 (...args) {
+    info4 (...args:any[]) {
         this._morph('info4', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info3 (...args) {
+    info3 (...args:any[]) {
         this._morph('info3', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info2 (...args) {
+    info2 (...args:any[]) {
         this._morph('info2', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info1 (...args) {
+    info1 (...args:any[]) {
         this._morph('info1', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    info0 (...args) {
+    info0 (...args:any[]) {
         this._morph('info0', ...args)
     }
 
     /** Synonymous with info0 */
-    info (...args) {
+    info (...args:any[]) {
         this.info0(...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn9 (...args) {
+    warn9 (...args:any[]) {
         this._morph('warn9', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn8 (...args) {
+    warn8 (...args:any[]) {
         this._morph('warn8', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn7 (...args) {
+    warn7 (...args:any[]) {
         this._morph('warn7', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn6 (...args) {
+    warn6 (...args:any[]) {
         this._morph('warn6', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn5 (...args) {
+    warn5 (...args:any[]) {
         this._morph('warn5', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn4 (...args) {
+    warn4 (...args:any[]) {
         this._morph('warn4', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn3 (...args) {
+    warn3 (...args:any[]) {
         this._morph('warn3', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn2 (...args) {
+    warn2 (...args:any[]) {
         this._morph('warn2', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn1 (...args) {
+    warn1 (...args:any[]) {
         this._morph('warn1', ...args)
     }
 
     /** Outputs log at the named level granularity */
-    warn0 (...args) {
+    warn0 (...args:any[]) {
         this._morph('warn0', ...args)
     }
 
     /** Synonymous with warn0 */
-    warn (...args) {
+    warn (...args:any[]) {
         this.warn0(...args)
     }
 
     /** Used to output a log related to an error. */
-    error (...args) {
+    error (...args:any[]) {
         this._morph('error0', ...args)
     }
 
     /** Used to output a log related to an exception.*/
-    exception (...args) {
+    exception (...args:any[]) {
+        let maybeErr:any = args[0]
+        if(typeof maybeErr === 'function') {
+            maybeErr = maybeErr()
+        }
+        if(maybeErr instanceof Error) {
+            args[0] = maybeErr.message
+            const stack = maybeErr.stack
+            if(stack) {
+                const firstLine = stack.split('\n')[1].trim()
+                const ffl = getSourceMap(this.stackParser.parseLine(firstLine))
+                args.push(` on line ${ffl.line} of ${ffl.file}`)
+            }
+        }
         this._morph('exception0', ...args)
     }
 
     /** Used to output a log related to non-recoverable crash.*/
-    fatal (...args) {
+    fatal (...args:any[]) {
         this._morph('fatal0', ...args)
     }
     /** alias for fatal */
-    crash (...args) {
+    crash (...args:any[]) {
         this.fatal(...args)
     }
+
+    /** alias for trace */
+    Trace(...args:any[]) {
+        this.trace(...args)
+    }
+    /** alias for debug */
+    Debug(...args:any[]) {
+        this.debug(...args)
+    }
+    /** alias for log */
+    Log(...args:any[]) {
+        this.log(...args)
+    }
+    /** alias for info */
+    Info(...args:any[]) {
+        this.info(...args)
+    }
+    /** alias for warb */
+    Warn(...args:any[]) {
+        this.warn(...args)
+    }
+    /** alias for error */
+    Error(...args:any[]) {
+        this.error(...args)
+    }
+    /** alias for fatal */
+    Critical(...args:any[]) {
+        this.fatal(...args)
+    }
+    /** alias for exception */
+    Exception(...args:any[]) {
+        this.exception(...args)
+    }
+
 
     /**
      * Declares the start of a contextual group of related log statements.
@@ -1086,7 +1455,7 @@ export class Logger {
      *
      * @param name
      */
-    group (name) {
+    group (name:string) {
         const writers = this.writers || []
         writers.forEach(writer => {
             writer.startGroup(this.groups.length, name)
@@ -1100,9 +1469,11 @@ export class Logger {
     groupEnd () {
         const name = this.groups.pop()
         const writers = this.writers || []
-        writers.forEach(writer => {
-            writer.endGroup(this.groups.length, name)
-        })
+        if(name) {
+            writers.forEach(writer => {
+                writer.endGroup(this.groups.length, name)
+            })
+        }
     }
 
 }
@@ -1123,7 +1494,7 @@ export class Logger {
  * @param strOrArray
  * @returns {string}
  */
-function applyColor (strOrArray) {
+function applyColor (strOrArray:string|string[]) {
     if (!Array.isArray(strOrArray)) {
         strOrArray = [strOrArray]
     }
@@ -1185,7 +1556,7 @@ function parseColor (str = '') {
 // TODO: Handle the first 16 colors (primary, bright)
 
 // Used by applyColor
-function rgb2ansiCode (str) {
+function rgb2ansiCode (str:string) {
     const rgb = parseColor(str)
     if (typeof rgb === 'number') return rgb // direct code
     if (!rgb) return ''
@@ -1209,7 +1580,7 @@ function rgb2ansiCode (str) {
 
 // -----------------------
 
-function expandObject (key, value) {
+function expandObject (key:string, value:any) {
     if (typeof value === 'undefined') return 'undefined'
     if (value instanceof RegExp) {
         return '[RegEx]: ' + new RegExp(value).toString()

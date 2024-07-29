@@ -3,7 +3,7 @@ declare global {
     interface Window { _smxInfo: any; }
 }
 
-let nfs,path
+let nfs:any,path:any
 try {
     if (typeof global === 'object') {
         if (typeof global.process === 'object') {
@@ -19,8 +19,8 @@ try {
 // This code runs directly when this module is imported and loads in the smx-info.js file generated
 // by the smx tool, if there.  This file maps data found in webpack bundle.js to original .ts sources.
 // will not be there in N/A scenarios.
-let smxInfo
-let oneTime
+let smxInfo:any
+let oneTime:boolean
 
 function getSmxInfo() {
     if(smxInfo) return smxInfo
@@ -86,7 +86,7 @@ function readMapData(filePath) {
             }
             mapData = JSON.parse(mapText)
         }
-        mapData = null // if return is null, it means there is no embedded map data
+        // mapData = null // if return is null, it means there is no embedded map data
         // if it is undefined it means the source file was not found
     }
     return mapData
