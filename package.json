@@ -1,12 +1,12 @@
 {
   "name": "@tremho/gen-logger",
-  "version": "2.0.0-pre-release.7",
+  "version": "2.0.0-pre-release.8",
   "description": "Generalized central logging support adaptable to various output sinks",
   "main": "build/src/Log.js",
   "scripts": {
     "prepublish": "npm test && npm run doc",
     "test": "npm run clean && npm run build && tap --reporter=base --color --passes --disable-coverage ./build/test/*.test.js",
-    "test-direct": "npm run clean && npm run build && node build/test/misccov.test.js",
+    "test-direct": "npm run clean && npm run build && node build/test/MemLog.test.js",
     "clean": "rm -fr build css",
     "build": "tsc",
     "start": "npm run clean && npm run build && node build/start.js",
@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@jridgewell/sourcemap-codec": "^1.5.0",
-    "@tremho/gen-format": "^2.0.0-pre-release.4",
+    "@tremho/gen-format": "^2.0.0-pre-release.8",
     "@types/node": "^14.14.22",
     "base-64": "^1.0.0"
   },

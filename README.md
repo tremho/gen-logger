@@ -344,19 +344,21 @@ of level values.  We can "exclude" a value, say 'debug' and by doing so, only th
 We can use the api `Log.excludeLevel` or `Log.excludeAllLevels` or the complement to these, `Log.includeLevel` and 
 `Log.includeAllLevels`. Note that "include" simply removes a value from the exclusion list.
 We can combine techniques, too, so if we were to say
+
 ```typescript
 Log.setMinimumLevel('Console', 'info')
 Log.includeLevel('Console', 'debug')
 ```
+
 we would end up with the levels debug, info, warn, error, exception, and fatal, but not 'trace' or 'log'.
 
-Note that ___granularity is not selectable in this way___. That is, you cannot say, for example `Log.excludeLevel('debug3')`.
+Note that **_granularity is not selectable in this way_**. That is, you cannot say, for example `Log.excludeLevel('debug3')`.
 
 If you turn on or off a level (say, 'debug'), all the associated granular sub-levels are affected with that as well.
 Filtering beyond this would require a custom writer.
 
-
 ###### Categories
+
 You can log an optional "category" to be associated with a log message to help identify the context of
 the log message.
 To do this, you must first assign a category with the api `addCategory`.  Then, pass this category name
@@ -367,9 +369,10 @@ For example:
 addCategory('Application')
 Log.debug('Application', 'This is n log in the application category')
 ```
+
 will produce output similar to this:
 
-- 08:21:23.062 basicLogTest (logTest.ts:27) [Application]  DEBUG  This is a log in the application category
+-   08:21:23.062 basicLogTest (logTest.ts:27) [Application]  DEBUG  This is a log in the application category
 
 note that if a category is passed that is not a recognized category (that is, one that has been added),
 the category name will simply appear pre-pended to the log message and not reported as a category.
@@ -394,6 +397,7 @@ Log statements can be grouped together into a named bracketed section that infor
 Groups can be nested as well.  In a browser context, groups can be expanded / collapse using the browser console UI.
 
 For example thes log lines:
+
 ```typescript
     Log.group("GroupTest")
     Log.trace("this is a log in the group")
@@ -408,24 +412,20 @@ For example thes log lines:
     Log.groupEnd()
     Log.info('done with groups')
 ```
+
 will produce the following output:
 
-```
- <GroupTest> 
-  - 10:33:09.950 basicLogTest (logTest.ts:29)  TRACE  this is a log in the group 
-  - 10:33:09.951 basicLogTest (logTest.ts:30)  DEBUG  another log in the group 
-  - 10:33:09.952 basicLogTest (logTest.ts:31) [Application]  LOG  a categorized log in the group 
-  - 10:33:09.953 basicLogTest (logTest.ts:32)  INFO  still in the group 
-   <Subgroup> 
-    - 10:33:09.953 basicLogTest (logTest.ts:34)  INFO  this is in a subgroup 
-    - 10:33:09.954 basicLogTest (logTest.ts:35)  TRACE  that is all 
-   </Subgroup> 
-  - 10:33:09.955 basicLogTest (logTest.ts:37) [Foobar]  WARN  still in the group 
- </GroupTest> 
-
-```
-
-
+     <GroupTest> 
+      - 10:33:09.950 basicLogTest (logTest.ts:29)  TRACE  this is a log in the group 
+      - 10:33:09.951 basicLogTest (logTest.ts:30)  DEBUG  another log in the group 
+      - 10:33:09.952 basicLogTest (logTest.ts:31) [Application]  LOG  a categorized log in the group 
+      - 10:33:09.953 basicLogTest (logTest.ts:32)  INFO  still in the group 
+       <Subgroup> 
+        - 10:33:09.953 basicLogTest (logTest.ts:34)  INFO  this is in a subgroup 
+        - 10:33:09.954 basicLogTest (logTest.ts:35)  TRACE  that is all 
+       </Subgroup> 
+      - 10:33:09.955 basicLogTest (logTest.ts:37) [Foobar]  WARN  still in the group 
+     </GroupTest> 
 
 ###### Use in browser projects
 
@@ -450,7 +450,6 @@ to be 'browser' instead of 'tty'
 const Log = createDefaultLogger()
 const w = Log.findWriter('Console')
 w.target.location = 'browser'
-
 ```
 
 ###### Uses for the Memory Log Writer
@@ -475,12 +474,13 @@ import {Logger, LogTarget, LogWriter} from '@tremho/gen-logger'
 
 const MemLog = new Logger()
 MemLog.addWriter(new LogWriter(new LogTarget('MemLog', 'Memory', 'MemLog')))
-
 ```
+
 Note that the last value passed when creating the MemLog target is the name by which you will fetch
 the recorded log data by.
 
 You can then use it at points the code, such as this example:
+
 ```typescript
 import {clearMemoryLog, readMemoryLog} from '@tremho/gen-logger'
 
@@ -497,7 +497,6 @@ try{
     }
 }
 ```
-
 
 ## API
 
@@ -734,8 +733,7 @@ levels below this will be excluded.
 #### Parameters
 
 -   `writerName`  name of writer to affect
--   `minLevel`  
--   `level`  name of level. note that granular levels are not supported. Only primary level names.
+-   `minLevel`  name of level. note that granular levels are not supported. Only primary level names.
 
 ### enableColor
 
@@ -1377,7 +1375,3 @@ Resulting FFL will also contain the source file path.
 -   `ffl`  FuncFileLine object that is modified with source map information and returned
 
 Returns **any** Modified FFL is also returned
- 
- 
- 
- 

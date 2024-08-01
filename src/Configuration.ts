@@ -4,6 +4,7 @@ try {
     if (typeof global === 'object') {
         if (typeof global.process === 'object') {
             // node detected
+            nfs = {}
             nfs.fs = require('fs')
             nfs.path = require('path')
         }
