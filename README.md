@@ -124,6 +124,8 @@ var Log = getLogger('Main')
 module.exports = Log
 ```
 
+_Read more about configuration [in the configuration document](./configuration.md)_
+
 If you are running in a browser-based context and not
 running under Node, you cannot use the `loadLoggerConfig`
 method, since direct file access is not normally 
@@ -144,6 +146,7 @@ the the default 'tty' for your writer.  This will integrate with the Google-styl
 and will support collapsible groups and other features. Read more about this later in this document.
 
 ###### Creating a simple default logger
+
 If you are looking for a simple, ready to use Console logger (color), you can choose to not use
 a configuration file and instead use `createDefaultLogger()` in your Log.js file like this:
 
@@ -163,6 +166,7 @@ export default createDefaultLogger()
 ```
 
 or for non-typescript javascript
+
 ```javascript
 var {createDefaultLogger} = require('@tremho/gen-logger')
 module.exports = createDefaultLogger()
@@ -225,35 +229,39 @@ LogBoth.log('this goes to both console and file')
 ###### Types of log writer targets
 
 There are 4 basic types of writers defined:
-- Console - outputs to the console display.  There are two forms of this, dictated by the "consoleType" property.
-- LogFile - outputs to a file in the filesystem.
-- Memory - records logs in memory
-- Service - sends log data to a web service
+
+-   Console - outputs to the console display.  There are two forms of this, dictated by the "consoleType" property.
+-   LogFile - outputs to a file in the filesystem.
+-   Memory - records logs in memory
+-   Service - sends log data to a web service
 
 These types are declared by name in the writer `type` property.
 There are additional fields for the writer configuration that may apply per 'type' choice:
 
-- For 'Console', there is `consoleType`.  This may be either `tty` or `browser`. The default is `tty`.
-Choose `browser` for integration into browser console displays.
+-   For 'Console', there is `consoleType`.  This may be either `tty` or `browser`. The default is `tty`.
+    Choose `browser` for integration into browser console displays.
 
-- For 'LogFile', there is `filePath` which is a path to the log file
-- 
-- For 'Memory', there is `memoryName` which names the memory block for later access. If this is not given,
-the name of the writer is used for the memory name.
-- 
-- For 'Service', there is `serviceUrl` which is the url for the service that is called.
-
+-   For 'LogFile', there is `filePath` which is a path to the log file
+-   
+-   For 'Memory', there is `memoryName` which names the memory block for later access. If this is not given,
+    the name of the writer is used for the memory name.
+-   
+-   For 'Service', there is `serviceUrl` which is the url for the service that is called.
 
 ###### Implementing custom writers
 
 There is an existing node-compatible file writer available for easy construction.
+
 ```typescript
 const writer = createLogFileWriter(name, filePath)
 ```
+
 and then you can add it to your logger with
+
 ```typescript
 Log.addWriter(writer)
 ```
+
 but for Service writers or any other custom output,  you must create a custom writer.
 
 This is relatively easy to do.  Create your Logger object programmatically and attach
@@ -296,8 +304,8 @@ target.colorLevels = {
 const writer = new LogWriter(target)
 Log.addWriter(writer)
 export default Log
-
 ```
+
 using the pattern above, one can create custom log writers for file, service, database, whatever.
 
 ###### Default LogFile writer example
@@ -313,6 +321,7 @@ const writer = createLogFileWriter("MyLogger", 'logs/log.txt')
 Log.addWriter(writer)
 export default Log
 ```
+
 This will create a directory named 'logs' and there will be one log file (named 'log.txt') in this directory after
 the first one, and one named 'log1.txt' after the second run, one named 'log2.txt' after the third run, and so on.
 The log will contain a series of json objects separated by newlines.
@@ -320,13 +329,174 @@ No stack trace is captured with this writer.
 The highest numbered log is the most current.
 You are responsible for cleaning up old log files.
 
-###### Use in _Node_ projects
+###### Setting LogLevel filtering
+
+By default, a logger will emit logs for all Log Levels - trace through fatal - but sometimes we want to 
+filter out some of the noise.  We can do this a couple of ways.
+One is by using the familiar paradigm of "log level" as a value, where 'trace' is the lowest value and 'fatal' is the highest.
+We can call `Log.setMinimumLevel` to specify that only log levels of the given level or higher will be emitted.
+You must name the writer to affect as the first parameter, and the name of the minimum level as the second parameter when using this function.
+
+For example, `Log.setMinimumLevel('Console', 'info`) will insure that only 'info', 'warn', 'error', 'exception', and 'fatal'
+messages make it through to output on the 'Console' writer of the logger.
+But there is another mechanism that allows us to cherry-pick which levels to see.  This happens through "exclusion"
+of level values.  We can "exclude" a value, say 'debug' and by doing so, only the 'debug' level logs will be supressed.
+We can use the api `Log.excludeLevel` or `Log.excludeAllLevels` or the complement to these, `Log.includeLevel` and 
+`Log.includeAllLevels`. Note that "include" simply removes a value from the exclusion list.
+We can combine techniques, too, so if we were to say
+```typescript
+Log.setMinimumLevel('Console', 'info')
+Log.includeLevel('Console', 'debug')
+```
+we would end up with the levels debug, info, warn, error, exception, and fatal, but not 'trace' or 'log'.
+
+Note that ___granularity is not selectable in this way___. That is, you cannot say, for example `Log.excludeLevel('debug3')`.
+
+If you turn on or off a level (say, 'debug'), all the associated granular sub-levels are affected with that as well.
+Filtering beyond this would require a custom writer.
+
+
+###### Categories
+You can log an optional "category" to be associated with a log message to help identify the context of
+the log message.
+To do this, you must first assign a category with the api `addCategory`.  Then, pass this category name
+as the first argument to a log statement and it will appear in the log output
+For example:
+
+```typescript
+addCategory('Application')
+Log.debug('Application', 'This is n log in the application category')
+```
+will produce output similar to this:
+
+- 08:21:23.062 basicLogTest (logTest.ts:27) [Application]  DEBUG  This is a log in the application category
+
+note that if a category is passed that is not a recognized category (that is, one that has been added),
+the category name will simply appear pre-pended to the log message and not reported as a category.
+
+###### Setting a default category name
+
+Normally, logs without a category appear with no category display.  This is considered the "Default" category.
+To make all the 'Default' category messages present with a specific name, use the api `Log.setDefaultCategoryName`
+
+This will make all the default logs appear with this name as the reported "category",  Note that in this case, the category
+does not necessarily need to be added ahead of time.
+
+This can be useful for separating sections of context.
+Note that the `setDefaultCategoryName` api returns the value of any previously set name, so this can be used
+to go in and out of different contexts.
+Note that if an assigned category is passed, this category declaration will override the default category name, which 
+only affects log output without a specifically passed category.
+
+###### Using groups
+
+Log statements can be grouped together into a named bracketed section that informs context.
+Groups can be nested as well.  In a browser context, groups can be expanded / collapse using the browser console UI.
+
+For example thes log lines:
+```typescript
+    Log.group("GroupTest")
+    Log.trace("this is a log in the group")
+    Log.debug('another log in the group')
+    Log.log('Application', 'a categorized log in the group')
+    Log.info('still in the group')
+    Log.group('Subgroup')
+    Log.info('this is in a subgroup')
+    Log.trace('that is all')
+    Log.groupEnd()
+    Log.warn('still in the group')
+    Log.groupEnd()
+    Log.info('done with groups')
+```
+will produce the following output:
+
+```
+ <GroupTest> 
+  - 10:33:09.950 basicLogTest (logTest.ts:29)  TRACE  this is a log in the group 
+  - 10:33:09.951 basicLogTest (logTest.ts:30)  DEBUG  another log in the group 
+  - 10:33:09.952 basicLogTest (logTest.ts:31) [Application]  LOG  a categorized log in the group 
+  - 10:33:09.953 basicLogTest (logTest.ts:32)  INFO  still in the group 
+   <Subgroup> 
+    - 10:33:09.953 basicLogTest (logTest.ts:34)  INFO  this is in a subgroup 
+    - 10:33:09.954 basicLogTest (logTest.ts:35)  TRACE  that is all 
+   </Subgroup> 
+  - 10:33:09.955 basicLogTest (logTest.ts:37) [Foobar]  WARN  still in the group 
+ </GroupTest> 
+
+```
+
+
 
 ###### Use in browser projects
 
+gen-logger may be used in a browser context, but there are some caveats.
+
+Source mapping is not available in this mode, so the reported file names and
+line numbers will be misleading, or outright wrong.
+
+While this is something that could be addressed, the problem is non-trivial and
+the solution may depend upon which bundler is used (if any) and how the source is loaded by
+the browser.
+This has been made to work in the past, so in limited contexts at least, it is certainly
+possible.  If you have a solution, please contribute to the open source project.
+
+The style of the output in a browser console is not ideal and could use better
+default formatting.
+
+Browser console logging is enabled by setting the 'location' property of a 'Console' writer
+to be 'browser' instead of 'tty'
+
+```typescript
+const Log = createDefaultLogger()
+const w = Log.findWriter('Console')
+w.target.location = 'browser'
+
+```
+
 ###### Uses for the Memory Log Writer
 
-###### Setting Log Levels
+The memory log target is an interesting and useful option. It allow you to 
+emit logs that go unseen, but recorded in memory.
+
+There are many possible scenarios for such a feature.  For example, suppose
+you have a subsystem that usually works fine, but sometimes fails, and the only way
+to understand why it fails is to look at all the state changes that have occurred over
+a wide span. However, logging these events to the main logger creates too much noise
+and confuses understanding of the log in general.
+
+So, you log these events into a memory logger and then at the point the subsystem
+performs its action (or perhaps only on an exception catch of when it fails)
+the memory log contents are retrieved and output for analysis.
+
+You can define a MemLog in a config file or your can create one programatically like this:
+
+```typescript
+import {Logger, LogTarget, LogWriter} from '@tremho/gen-logger'
+
+const MemLog = new Logger()
+MemLog.addWriter(new LogWriter(new LogTarget('MemLog', 'Memory', 'MemLog')))
+
+```
+Note that the last value passed when creating the MemLog target is the name by which you will fetch
+the recorded log data by.
+
+You can then use it at points the code, such as this example:
+```typescript
+import {clearMemoryLog, readMemoryLog} from '@tremho/gen-logger'
+
+try{
+    MemLog.trace("Recording logs we don't see yet")
+    MemLog.info("these can be any log statements, just like any other logger")
+        // ...
+    }
+    catch(e:any) {
+        Log.Exception(e)
+        // output all the collected logs recorded up to this point
+        console.log(readMemoryLog('MemLog'))
+        clearMemoryLog('MemLog') // clear for future use
+    }
+}
+```
 
 
 ## API
@@ -379,6 +549,11 @@ call `setLoggerConfig` instead.
 #### Parameters
 
 -   `json`  
+
+### createDefaultLogger
+
+Creates and returns a default logger suitable for general console purposes
+It has a single writer ('Console') that outputs in color.
 
 ### setLoggerConfig
 
@@ -505,6 +680,16 @@ Find a writer by name that belongs to this Logger
 
 -   `targetName`  
 
+### setDefaultCategoryName
+
+Set the name of a category to appear by default
+
+#### Parameters
+
+-   `defName`  
+
+Returns **any** previously set name (so we can put it back if this is a temporary labelling)
+
 ### includeAllLevels
 
 Include all the levels in the writer output
@@ -540,7 +725,7 @@ The writer will ignore all logs for this level
 -   `writerName`  name of writer to affect
 -   `level`  name of level. note that granular levels are not supported. Only primary level names.
 
-### setMininumLevel
+### setMinimumLevel
 
 Set a minimum level.
 This level and above will be output by the writer.
@@ -551,6 +736,15 @@ levels below this will be excluded.
 -   `writerName`  name of writer to affect
 -   `minLevel`  
 -   `level`  name of level. note that granular levels are not supported. Only primary level names.
+
+### enableColor
+
+turn color support on/off for a given writer
+
+#### Parameters
+
+-   `writerName`  
+-   `enabled`  
 
 ### includeAllCategories
 

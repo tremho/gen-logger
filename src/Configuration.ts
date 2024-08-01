@@ -1,10 +1,11 @@
 
-export let nfs:any
+export let nfs:any = null
 try {
     if (typeof global === 'object') {
         if (typeof global.process === 'object') {
             // node detected
-            nfs = require('fs')
+            nfs.fs = require('fs')
+            nfs.path = require('path')
         }
     }
 } catch(e) {
@@ -121,8 +122,8 @@ export default class Configuration {
         if(!nfs) {
             throw Error('loadConfigFile is not available.')
         }
-        if(nfs.existsSync(path)) {
-            const contents = nfs.readFileSync(path).toString()
+        if(nfs?.fs.existsSync(path)) {
+            const contents = nfs?.fs.readFileSync(path).toString()
             this.configSchema = JSON.parse(contents)
         } else {
             throw Error(`Logger configuration file ${path} not found` )

@@ -63,6 +63,13 @@ export class StackLineParser {
                     let pe = ln.indexOf(')', ce)
                     if (pe === -1) pe = ln.length
                     column = Number(ln.substring(ce + 1, pe))
+                    // if(isNaN(line)) {
+                    //     let n = ln.lastIndexOf(':')
+                    //     n = ln.lastIndexOf(':', n)
+                    //     const a = ln.substring(n+1)
+                    //     line = a.split(':')[0]
+                    //     column = a.split(':')[1]
+                    // }
                     ffl.filePath = file
                     ffl.file = file.substring(file.lastIndexOf('/') + 1)
                     ffl.func = func

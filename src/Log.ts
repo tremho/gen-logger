@@ -4,10 +4,6 @@ import Configuration, {ConfigSchema, DisplayOptions, ElementType, FormatType, nf
 import {FuncFileLine, StackLineParser} from "./StackLineParser";
 import {getSourceMap} from "./SourceMap";
 
-let npath:any
-if(nfs) {
-    npath = require('path')
-}
 
 
 /*
@@ -80,7 +76,7 @@ export function createLogFileWriter(name:string, filePath:string):LogWriter {
         }
         const file = target.state.open
         try {
-            nfs.appendFileSync(file, formatted+'\n')
+            nfs?.fs.appendFileSync(file, formatted+'\n')
         } catch(e) {
             console.error('Error writing to logfile '+filePath, e)
         }
@@ -93,17 +89,17 @@ function rotateLogFile(filePath:string) {
         console.warn("no file interface available")
         return filePath;
     }
-    const logDir = npath.dirname(filePath)
-    if(!nfs.existsSync(logDir)) nfs.mkdirSync(logDir, {recursive: true})
+    const logDir = nfs?.path.dirname(filePath)
+    if(!nfs?.fs.existsSync(logDir)) nfs?.fs.mkdirSync(logDir, {recursive: true})
 
-    if(!nfs.existsSync(filePath)) return filePath
+    if(!nfs?.fs.existsSync(filePath)) return filePath
 
     let hn = 0;
-    let logName = npath.basename(filePath)
+    let logName = nfs?.path.basename(filePath)
     let xi = logName.lastIndexOf('.')
     if(xi !== -1) logName = logName.substring(0, xi)
-    const ext = npath.extname(filePath)
-    const files = nfs.readdirSync(logDir)
+    const ext = nfs?.path.extname(filePath)
+    const files = nfs?.fs.readdirSync(logDir)
     for (let f of files) {
         xi = f.lastIndexOf('.')
         if(xi !== -1) f = f.substring(0, xi)
@@ -112,7 +108,7 @@ function rotateLogFile(filePath:string) {
             if (n > hn) hn = n
         }
     }
-    return npath.join(logDir, logName)+(hn+1)+ext;
+    return nfs?.path.join(logDir, logName)+(hn+1)+ext;
 
 }
 
@@ -848,6 +844,7 @@ export class Logger {
     private writers:LogWriter[] = []
     private groups:string[] = []
     private stackParser:StackLineParser = new StackLineParser()
+    private defaultCategoryName:string = ''
 
 
     /**
@@ -894,6 +891,17 @@ export class Logger {
             }
         }
         return null
+    }
+
+    /**
+     * Set the name of a category to appear by default
+     * @param defName
+     * @returns - previously set name (so we can put it back if this is a temporary labelling)
+     */
+    setDefaultCategoryName(defName:string):string {
+        const oldName = this.defaultCategoryName
+        this.defaultCategoryName = defName
+        return oldName
     }
 
     /**
@@ -952,9 +960,9 @@ export class Logger {
      * levels below this will be excluded.
      *
      * @param writerName - name of writer to affect
-     * @param level - name of level. note that granular levels are not supported. Only primary level names.
+     * @param minLevel - name of level. note that granular levels are not supported. Only primary level names.
      */
-    setMininumLevel(writerName:string, minLevel:string) {
+    setMinimumLevel(writerName:string, minLevel:string) {
         const wr = this.findWriter(writerName)
         const pick = levelNames.indexOf(minLevel.toLowerCase())
         if(pick !== -1) {
@@ -964,8 +972,20 @@ export class Logger {
                 wr.includeLevel(minLevel, ...pickedLevels)
             }
         }
-
     }
+
+    /**
+     * turn color support on/off for a given writer
+     * @param writerName
+     * @param enabled
+     */
+    enableColor(writerName:string, enabled:boolean) {
+        const wr = this.findWriter(writerName)
+        if(wr) {
+            wr.target.supportsColor = enabled
+        }
+    }
+
     /**
      * Include all the categories in the writer output
      * @param writerName - name of writer to affect
@@ -983,7 +1003,7 @@ export class Logger {
     excludeAllCategories(writerName:string) {
         const wr = this.findWriter(writerName)
         if(wr) {
-            wr.excludeCategory('trace', ...levelNames)
+            wr.excludeCategory('default', ...levelNames)
         }
 
     }
@@ -1066,7 +1086,7 @@ export class Logger {
             }
             // groups introduce indents
             const pad = this.groups.length ? ' '.repeat(this.groups.length * 2) : ''
-            // trace.write(pad + formatted, category, typeGran.type)
+
             writer.outputLog(pad+formatted, category, typeGran.type, stackdump ?? '', xargs ?? null)
         }
     }
@@ -1081,7 +1101,7 @@ export class Logger {
         // TODO:Check
         // if (global.__snapshot) return; // disallow if we are in snapshot release mode
 
-        let category = ''
+        let category = this.defaultCategoryName
         let message = ''
         let a = [...args]
         if (a.length <= 1) {
@@ -1089,7 +1109,7 @@ export class Logger {
             if (typeof a[0] === 'string') {
                 message = a.shift() || ''
             }
-            category = 'Default'
+            category = this.defaultCategoryName
         } else {
             if (typeof a[0] !== 'string') {
                 message = a.shift()
@@ -1099,7 +1119,7 @@ export class Logger {
                     category = a.shift()
                     message = a.shift()
                 } else {
-                    category = 'Default'
+                    category = this.defaultCategoryName
                     message = a.shift()
                     // throw Error(`Unknown Logger Category ${a[0]}`)
                 }

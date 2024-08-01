@@ -24,7 +24,12 @@ let oneTime:boolean
 
 function getSmxInfo() {
     if(smxInfo) return smxInfo
-    let gsmx = ((global.window as any) ||  {})._smxInfo;
+    let gsmx
+    if(typeof global !== 'undefined') {
+        gsmx = ((global.window as any) || {})._smxInfo;
+    } else if(typeof window !== 'undefined') {
+        gsmx = ((window as any) || {})._smxInfo;
+    }
     if(gsmx) {
         smxInfo = gsmx
         return smxInfo
@@ -105,7 +110,7 @@ export function getSourceMap (ffl) {
 
     // read from pre-generated source info if available, otherwise, read the map file.
     let smxInfo = getSmxInfo()
-    const mapData = (smxInfo && smxInfo[ffl.file]) || readMapData(ffl.filePath)
+    const mapData = smxInfo ? (smxInfo && smxInfo[ffl.file]) || readMapData(ffl.filePath) : null
 
     if (mapData) {
 
