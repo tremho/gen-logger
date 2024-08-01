@@ -1,4 +1,5 @@
 import Tap from 'tap'
+import path from 'path'
 
 /*
 Run start.ts to see a variety of log output to the console.
@@ -30,7 +31,7 @@ function memLogTest() {
 
 import {loadLoggerConfig, getLogger,readMemoryLog, clearMemoryLog} from '../src/Log'
 
-loadLoggerConfig('/Users/sohmert/tbd/gen-logger/testConfig.json')
+loadLoggerConfig('./testConfig.json')
 
 const MemLog = getLogger('Mem') // cache name 'test'
 const JSONLog = getLogger('MemJSON') // default cache name (MemJSON)

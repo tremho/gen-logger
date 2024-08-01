@@ -36,7 +36,7 @@ function logFileTest() {
 
 import {loadLoggerConfig, getLogger,readMemoryLog, clearMemoryLog} from '../src/Log'
 
-loadLoggerConfig('/Users/sohmert/tbd/gen-logger/testConfig.json')
+loadLoggerConfig('./testConfig.json')
 
 const LogFile = getLogger('LogFile') // cache name 'test'
 const writer = LogFile.getWriters()[0]

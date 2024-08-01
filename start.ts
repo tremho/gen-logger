@@ -34,8 +34,7 @@ Log.addWriter(consoleWrite)
 End Non-Config way
 */
 
-// loadLoggerConfig('/Users/sohmert/tbd/gen-logger/testConfig.json')
-loadLoggerConfig('/Users/sohmert/tbd/gen-logger/logconfig.json')
+loadLoggerConfig('./logconfig.json')
 
 const Log = getLogger('Main')
 

@@ -31,8 +31,6 @@ export class StackLineParser {
         }
     }
     parseLine(ln) {
-        //     at Object.<anonymous> (/Users/sohmert/tbd/gen-logger/build/index.js:15:5)
-        //     at StackLineParser.getFuncFileLine (file:///Users/sohmert/tbd/tbtest/build/front/bundle.js:8394:21)
 
         const ffl = new FuncFileLine()
         let func, file, line, column
