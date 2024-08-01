@@ -1,6 +1,6 @@
 {
   "name": "@tremho/gen-logger",
-  "version": "2.0.0-pre-release.6",
+  "version": "2.0.0-pre-release.7",
   "description": "Generalized central logging support adaptable to various output sinks",
   "main": "build/src/Log.js",
   "scripts": {
