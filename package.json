@@ -7,7 +7,7 @@
     "prepublish": "npm test && npm run doc",
     "test": "npm run clean && npm run build && tap --reporter=base --color --passes --disable-coverage ./build/test/*.test.js",
     "test-direct": "npm run clean && npm run build && node build/test/MemLog.test.js",
-    "clean": "npx rimraf build; npm rimraf css",
+    "clean": "npx rimraf build; npx rimraf css",
     "build": "tsc",
     "start": "npm run clean && npm run build && node build/start.js",
     "doc": "npm run clean && npm run build && inchjs && cd build; tsccd ./; documentation readme --readme-file ../README.md --markdown-toc false --section API src"
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "inchjs": "^0.4.1",
+    "rimraf": "^6.0.1",
     "tap": "^21.0.0",
     "ts-clear-classdoc": "^1.0.1"
   }
