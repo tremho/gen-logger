@@ -1377,3 +1377,4 @@ Resulting FFL will also contain the source file path.
 -   `ffl`  FuncFileLine object that is modified with source map information and returned
 
 Returns **any** Modified FFL is also returned
+ 
