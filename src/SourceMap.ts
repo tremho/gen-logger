@@ -81,7 +81,7 @@ function readMapData(filePath) {
             let mapText
             if(!b64) {
                 // read the referenced map file
-                let mapPath = filePath.substring(0, filePath.lastIndexOf('/')+1) + snip
+                let mapPath = filePath.substring(0, filePath.lastIndexOf(path.sep)+1) + snip
                 if(nfs.existsSync(mapPath)) {
                     mapText = nfs.readFileSync(mapPath).toString()
 

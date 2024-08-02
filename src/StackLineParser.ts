@@ -53,9 +53,12 @@ export class StackLineParser {
                 file = ln.substring(fpx + 1, pne) // full path
                 if(file.lastIndexOf('.') === -1) // probably not really a source file name
                 {
-                    file = ln.substring(fpx+1, ln.indexOf(':', pne+1)) // try again
-                    const ls = file.lastIndexOf(path.sep)
-                    file = file.substring(ls)
+                    // try again
+                    let tpne = ln.indexOf(':', pne+1)
+                    if(tpne !== -1) {
+                        pne = tpne
+                        file = ln.substring(fpx + 1, pne) // full path
+                    }
                 }
                 let ce = ln.lastIndexOf(':')
                 if (ce !== -1) {
