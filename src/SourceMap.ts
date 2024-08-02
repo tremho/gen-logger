@@ -110,7 +110,7 @@ export function getSourceMap (ffl) {
 
     // read from pre-generated source info if available, otherwise, read the map file.
     let smxInfo = getSmxInfo()
-    const mapData = smxInfo ? (smxInfo && smxInfo[ffl.file]) || readMapData(ffl.filePath) : null
+    const mapData = smxInfo ? smxInfo[ffl.file] : readMapData(ffl.filePath)
 
     if (mapData) {
 
