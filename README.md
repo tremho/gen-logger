@@ -40,6 +40,10 @@ that make it a good choice across a spectrum of logging needs.
 
 ###### Revision History
 
+-   **v 2.0.1**
+
+    -   fixes sourcemap issues, particularly those for the Windows platform
+
 -   **v 2.0.0**
     -   Updated as needed for use in a separate project (mist-lift)
     -   Added and updated several features
