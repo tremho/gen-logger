@@ -1,12 +1,11 @@
 # gen-logger
 
-This is a general purpose logging module for use in Javascript projects.
+This is a general purpose logging module for use in Javascript or Typescript projects.
 
 [![Build Status][build-status]][build-url]
 [![NPM version][npm-image]][npm-url]
 [![Downloads][downloads-image]][npm-url]
 [![TotalDownloads][total-downloads-image]][npm-url]
-[![Twitter Follow][twitter-image]][twitter-url]
 
 [build-status]: https://travis-ci.org/tremho/gen-logger.svg?branch=master
 
@@ -19,10 +18,6 @@ This is a general purpose logging module for use in Javascript projects.
 [downloads-image]: http://img.shields.io/npm/dm/gen-logger.svg
 
 [total-downloads-image]: http://img.shields.io/npm/dt/gen-logger.svg?label=total%20downloads
-
-[twitter-image]: https://img.shields.io/twitter/follow/Tremho1.svg?style=social&label=Follow%20me
-
-[twitter-url]: https://twitter.com/Tremho1
 
 The world may not need yet another logger utility, but gen-logger provides
 an easy to use structure, and a flexible, configuration-driven architectture
@@ -40,6 +35,37 @@ that make it a good choice across a spectrum of logging needs.
 -   Stack tracing with source map support
 -   Supports JSON format logging for compatibility with other tools
 -   Extensible for custom needs
+
+* * *
+
+###### Revision History
+
+-   **v 2.0.0**
+    -   Updated as needed for use in a separate project (mist-lift)
+    -   Added and updated several features
+    -   Now uses v 2.0.0 of gen-format
+    -   Easier to use configuration and option APIs
+
+
+-   **issue with initial 2.0.0 release**:
+    -   Source mapping is not working correctly,
+        and is pretty much entirely broken on Windows.
+        -   This will be the focus of the next update
+
+* * *
+
+### Come on contributors! Quit slacking!
+
+I rarely get contributor pull requests or issues as feedback for any of my open-source projects.
+This project has received a number of downloads, but no outside activity.
+Having recently revisited this myself to bring it to v 2.0.0, I have to think that
+those that have been using it must be modifying it to fix various things, and yet I am
+not seeing anything come back.
+
+_Please - if you make a change to this code, submit a PR for it.  That's how open source
+is supposed to work, right?_
+
+## [github repo](https://github.com/tremho/gen-logger)
 
 ###### Installation
 
